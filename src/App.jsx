@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 /*
-Standard tuning open string semitones from C0:
-6th(E2)=40, 5th(A2)=45, 4th(D3)=50, 3rd(G3)=55, 2nd(B3)=59, 1st(e4)=64
+  LEFT-HANDED CHART CONVENTION (horizontal mirror of standard RH chart):
+  - String order matches TAB: high e on TOP, low E on BOTTOM (unchanged from RH)
+  - Nut on the RIGHT side
+  - Fret 1 is rightmost (next to nut), fret 15 is leftmost
+  - String names displayed to the right of the nut
 
-We compute scale degrees by checking if (openSemitone + fret) mod 12
-matches any interval in the scale, relative to a chosen root.
+  Standard tuning open string semitones from C0:
+  E2=40, A2=45, D3=50, G3=55, B3=59, e4=64 → mod 12 = [4,9,2,7,11,4]
 
-Root = E (semitone 4 mod 12) so all scales shown in key of E.
+  Root = E (semitone 4) so all scales shown in key of E.
 */
 
 const STRINGS = 6;
@@ -20,11 +23,12 @@ const BASE_MARGIN_T = 20;
 const BASE_MARGIN_B = 18;
 const BASE_NUT_W = 8;
 const DOT_FRETS = [3, 5, 7, 9, 12, 15];
-// LH chart = horizontal mirror of RH chart. Strings keep TAB order: high e on top.
-const STRING_NAMES_LH = ["e", "B", "G", "D", "A", "E"];
 
-// Open string pitches in semitones mod 12: E=4, A=9, D=2, G=7, B=11, E=4
-const OPEN_SEMI = [4, 9, 2, 7, 11, 4]; // low E to high e
+// Data array: index 0 = low E (thickest), index 5 = high e (thinnest)
+const OPEN_SEMI = [4, 9, 2, 7, 11, 4];
+
+// Display array: index 0 = TOP visual row = high e, index 5 = BOTTOM = low E
+const STRING_NAMES_LH = ["e", "B", "G", "D", "A", "E"];
 
 const ROOT_SEMI = 4; // E
 
@@ -35,86 +39,63 @@ const COLORS = {
   fifth: { fill: "#7ec8a0", stroke: "#3d9e68", text: "#0a2015" },
 };
 
-// Scale definitions: intervals in semitones from root, with degree labels
 const SCALE_DEFS = [
   {
     name: "Major (Ionian)", color: "#6e9ef5", formula: "1  2  3  4  5  6  7",
     desc: "The foundation of Western music. Bright, happy, resolved.",
-    intervals: [
-      [0, "R"], [2, "2"], [4, "3"], [5, "4"], [7, "5"], [9, "6"], [11, "7"]
-    ],
+    intervals: [[0,"R"],[2,"2"],[4,"3"],[5,"4"],[7,"5"],[9,"6"],[11,"7"]],
   },
   {
     name: "Natural Minor (Aeolian)", color: "#a07be8", formula: "1  2  b3  4  5  b6  b7",
     desc: "Dark, emotional, melancholic. Relative to major scale.",
-    intervals: [
-      [0, "R"], [2, "2"], [3, "b3"], [5, "4"], [7, "5"], [8, "b6"], [10, "b7"]
-    ],
+    intervals: [[0,"R"],[2,"2"],[3,"b3"],[5,"4"],[7,"5"],[8,"b6"],[10,"b7"]],
   },
   {
     name: "Major Pentatonic", color: "#5ec4c4", formula: "1  2  3  5  6",
     desc: "Five notes of the major scale. Clean, country, folk, pop.",
-    intervals: [
-      [0, "R"], [2, "2"], [4, "3"], [7, "5"], [9, "6"]
-    ],
+    intervals: [[0,"R"],[2,"2"],[4,"3"],[7,"5"],[9,"6"]],
   },
   {
     name: "Minor Pentatonic", color: "#e07a5f", formula: "1  b3  4  5  b7",
     desc: "Rock, blues, metal go-to. Five notes, endless expression.",
-    intervals: [
-      [0, "R"], [3, "b3"], [5, "4"], [7, "5"], [10, "b7"]
-    ],
+    intervals: [[0,"R"],[3,"b3"],[5,"4"],[7,"5"],[10,"b7"]],
   },
   {
     name: "Blues", color: "#f2cc6b", formula: "1  b3  4  b5  5  b7",
     desc: "Minor pentatonic + the blue note (b5). Tension and soul.",
-    intervals: [
-      [0, "R"], [3, "b3"], [5, "4"], [6, "b5"], [7, "5"], [10, "b7"]
-    ],
+    intervals: [[0,"R"],[3,"b3"],[5,"4"],[6,"b5"],[7,"5"],[10,"b7"]],
   },
   {
     name: "Dorian", color: "#8bc34a", formula: "1  2  b3  4  5  6  b7",
     desc: "Minor but with a raised 6th. Jazzy, funky, modal coolness.",
-    intervals: [
-      [0, "R"], [2, "2"], [3, "b3"], [5, "4"], [7, "5"], [9, "6"], [10, "b7"]
-    ],
+    intervals: [[0,"R"],[2,"2"],[3,"b3"],[5,"4"],[7,"5"],[9,"6"],[10,"b7"]],
   },
   {
     name: "Mixolydian", color: "#ff8c69", formula: "1  2  3  4  5  6  b7",
     desc: "Major with a flat 7. Rock, blues-rock, dominant grooves.",
-    intervals: [
-      [0, "R"], [2, "2"], [4, "3"], [5, "4"], [7, "5"], [9, "6"], [10, "b7"]
-    ],
+    intervals: [[0,"R"],[2,"2"],[4,"3"],[5,"4"],[7,"5"],[9,"6"],[10,"b7"]],
   },
   {
     name: "Phrygian", color: "#c06baa", formula: "1  b2  b3  4  5  b6  b7",
     desc: "Dark, Spanish-flavored, intense. Metal and flamenco favorite.",
-    intervals: [
-      [0, "R"], [1, "b2"], [3, "b3"], [5, "4"], [7, "5"], [8, "b6"], [10, "b7"]
-    ],
+    intervals: [[0,"R"],[1,"b2"],[3,"b3"],[5,"4"],[7,"5"],[8,"b6"],[10,"b7"]],
   },
   {
     name: "Harmonic Minor", color: "#e8755a", formula: "1  2  b3  4  5  b6  7",
     desc: "Natural minor with raised 7. Exotic, classical, dramatic.",
-    intervals: [
-      [0, "R"], [2, "2"], [3, "b3"], [5, "4"], [7, "5"], [8, "b6"], [11, "7"]
-    ],
+    intervals: [[0,"R"],[2,"2"],[3,"b3"],[5,"4"],[7,"5"],[8,"b6"],[11,"7"]],
   },
 ];
 
-// Generate note positions for a scale across all strings
 function generateNotes(intervals) {
-  const intervalMap = new Map();
-  intervals.forEach(([semi, deg]) => intervalMap.set(semi, deg));
-
+  const map = new Map();
+  intervals.forEach(([semi, deg]) => map.set(semi, deg));
   const notes = [];
   for (let s = 0; s < STRINGS; s++) {
     const stringNotes = [];
     for (let f = 0; f <= FRETS_SHOWN; f++) {
       const pitch = (OPEN_SEMI[s] + f - ROOT_SEMI + 120) % 12;
-      if (intervalMap.has(pitch)) {
-        stringNotes.push([f, intervalMap.get(pitch)]);
-      }
+      if (map.has(pitch)) stringNotes.push([f, map.get(pitch)]);
     }
     notes.push(stringNotes);
   }
@@ -165,21 +146,20 @@ function ScaleCanvas({ scale, containerWidth }) {
     const ctx = cvs.getContext("2d");
     ctx.scale(dpr, dpr);
 
-    // bg
     ctx.fillStyle = "#12121a";
     ctx.beginPath();
     rr(ctx, 0, 0, totalW, totalH, 6 * s);
     ctx.fill();
 
-    const ox = ml; // fretboard starts here (high frets on left for LH)
+    const ox = ml;
     const oy = mt;
     const noteR = Math.max(6, 9 * s);
     const fontSize = Math.max(5, 8 * s);
 
-    // Nut position — LH: nut on right
+    // LH: nut on RIGHT
     const nutX = ox + FRETS_SHOWN * fw;
 
-    // Fret position dots — LH mirrored
+    // Inlay dots — LH: fret 1 on right, so x = ox + (FRETS - f + 0.5) * fw
     DOT_FRETS.forEach((f) => {
       if (f > FRETS_SHOWN) return;
       const x = ox + (FRETS_SHOWN - f + 0.5) * fw;
@@ -201,14 +181,14 @@ function ScaleCanvas({ scale, containerWidth }) {
       ctx.beginPath(); ctx.moveTo(x, oy); ctx.lineTo(x, oy + (STRINGS - 1) * sh); ctx.stroke();
     }
 
-    // Nut
+    // Nut (right side)
     ctx.fillStyle = "#2a2a3a";
     ctx.fillRect(nutX, oy - 4 * s, nw, (STRINGS - 1) * sh + 8 * s);
     ctx.strokeStyle = "#4a4a5e";
     ctx.lineWidth = s;
     ctx.strokeRect(nutX, oy - 4 * s, nw, (STRINGS - 1) * sh + 8 * s);
 
-    // Strings
+    // Strings — varying thickness: top (high e) thin, bottom (low E) thick
     for (let i = 0; i < STRINGS; i++) {
       const y = oy + i * sh;
       ctx.strokeStyle = "#3a3a4e";
@@ -216,7 +196,7 @@ function ScaleCanvas({ scale, containerWidth }) {
       ctx.beginPath(); ctx.moveTo(ox, y); ctx.lineTo(nutX + nw, y); ctx.stroke();
     }
 
-    // Fret numbers — LH mirrored
+    // Fret numbers — LH: 1 on right, 15 on left
     ctx.fillStyle = "#3a3a4a";
     ctx.font = `${Math.max(7, 9 * s)}px sans-serif`;
     ctx.textAlign = "center";
@@ -224,7 +204,7 @@ function ScaleCanvas({ scale, containerWidth }) {
       ctx.fillText(f, ox + (FRETS_SHOWN - f + 0.5) * fw, totalH - 4 * s);
     }
 
-    // String names — LH: on the right past nut
+    // String names — LH: to the right of the nut
     ctx.fillStyle = "#4a4a5a";
     ctx.font = `${Math.max(7, 9 * s)}px sans-serif`;
     ctx.textAlign = "left";
@@ -232,15 +212,17 @@ function ScaleCanvas({ scale, containerWidth }) {
       ctx.fillText(n, nutX + nw + 5 * s, oy + i * sh + 3.5 * s);
     });
 
-    // Notes — LH = RH mirrored horizontally. String order unchanged from TAB:
-    // high e on top (visual row 0), low E on bottom (visual row 5).
-    // notes array index 0 = low E, so visual row = 5 - origStr.
-    notes.forEach((sn, origStr) => {
-      const vs = STRINGS - 1 - origStr;
-      const y = oy + vs * sh;
+    // Notes
+    // notes[i] = data for OPEN_SEMI[i] where i=0 is low E, i=5 is high e
+    // Visual row: high e at top (row 0), low E at bottom (row 5)
+    // So visualRow = 5 - i
+    notes.forEach((sn, dataIdx) => {
+      const visualRow = STRINGS - 1 - dataIdx;
+      const y = oy + visualRow * sh;
       sn.forEach(([fret, deg]) => {
         if (fret > FRETS_SHOWN) return;
         const c = colorFor(deg);
+        // Open string note (fret 0) sits just right of nut; fretted notes mirror
         const x = fret === 0
           ? nutX + nw + 9 * s
           : ox + (FRETS_SHOWN - fret + 0.5) * fw;
