@@ -1,17 +1,20 @@
 # Left-Handed
 
-Guitar references — scales, chords, and tabs — **mirrored for left-handed players**.
+Guitar references (scales and tabs) **mirrored for left-handed players**. React + Vite.
 
 Most guitar resources online are drawn for right-handed players, leaving lefties
 to mentally flip every diagram. **Left-Handed** does the flipping for you: every
-chart is rendered in a true left-handed orientation so what you see on screen
+chart is rendered in a true left-handed orientation, so what you see on screen
 matches what you see looking down at your own fretboard.
 
-## Status
+Two views, switchable from the top nav:
 
-Early development. The first feature is a **left-handed scales reference**.
+- **Amazing Grace** the hymn as a left-handed tab (key of G, open position), plus
+  a mirrored fretboard of the five notes the melody uses.
+- **Scales** nine common scales in the key of E, as left-handed fretboard
+  diagrams across all positions.
 
-### Left-handed chart convention
+## Left-handed chart convention
 
 All diagrams use a horizontal mirror of the standard right-handed chart:
 
@@ -20,7 +23,12 @@ All diagrams use a horizontal mirror of the standard right-handed chart:
   run to the left.
 - String names are shown to the right of the nut.
 
-## Current feature — Scales reference
+Note that a tab's fret numbers are the same for right- and left-handed players.
+You fret the same number on the same string either way, so the tab is not
+mirrored. What flips for a lefty is the view of the neck, which is why the
+fretboard diagrams are mirrored and the tab is not.
+
+## Scales reference
 
 An interactive, responsive fretboard reference covering 9 scales in the key of
 **E**, standard tuning (E A D G B e), across the first 15 frets:
@@ -41,13 +49,13 @@ Notes are color-coded by scale degree: **root**, **scale tone**,
 ## Roadmap
 
 - [ ] Chord library (left-handed chord diagrams)
-- [ ] Chord / tab translator: paste a right-handed tab and get it mirrored
+- [ ] More songs as left-handed tabs
 - [ ] Selectable root key and alternate tunings
 - [ ] Audio playback
 
 ## Tech stack
 
-- [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- [React 18](https://react.dev/)
 - [Vite](https://vite.dev/) for dev server and build
 - HTML Canvas for fretboard rendering (no charting dependencies)
 
@@ -55,14 +63,14 @@ Notes are color-coded by scale degree: **root**, **scale tone**,
 
 ```bash
 npm install      # install dependencies
-npm run dev      # start the dev server (http://localhost:5173)
+npm run dev      # start the dev server (http://localhost:5180)
 npm run build    # production build to dist/
 npm run preview  # preview the production build locally
 ```
 
 ## Deployment (Cloudflare Pages)
 
-This project is configured for [Cloudflare Pages](https://pages.cloudflare.com/).
+This project deploys as a [Cloudflare Pages](https://pages.cloudflare.com/) site.
 When connecting the repository in the Cloudflare dashboard, use:
 
 | Setting                | Value           |
@@ -72,3 +80,9 @@ When connecting the repository in the Cloudflare dashboard, use:
 | Build output directory | `dist`          |
 
 Every push to the connected branch triggers a new deployment.
+
+## Structure
+
+- `src/App.jsx` view toggle and the Scales reference.
+- `src/AmazingGrace.jsx` the Amazing Grace tab and its left-handed fretboard.
+- `src/main.jsx` React entry point.
