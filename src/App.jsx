@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import AmazingGrace from "./AmazingGrace.jsx";
 
 /*
   LEFT-HANDED CHART CONVENTION (horizontal mirror of standard RH chart):
@@ -245,6 +246,7 @@ function ScaleCanvas({ scale, containerWidth }) {
 export default function App() {
   const containerRef = useRef(null);
   const [width, setWidth] = useState(0);
+  const [view, setView] = useState("song"); // "song" | "scales"
 
   useEffect(() => {
     const el = containerRef.current;
@@ -267,6 +269,29 @@ export default function App() {
       background: "#0e0e12", color: "#e0ddd8", fontFamily: "'Segoe UI', sans-serif",
       padding: "24px 16px", minHeight: "100vh",
     }}>
+      <nav style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 24 }}>
+        {[["song", "Amazing Grace"], ["scales", "Scales"]].map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setView(key)}
+            style={{
+              background: view === key ? "#c8a96e" : "transparent",
+              color: view === key ? "#12121a" : "#8a8a9e",
+              border: `1px solid ${view === key ? "#c8a96e" : "#2a2a3a"}`,
+              borderRadius: 4, padding: "6px 16px", fontSize: ".72rem",
+              fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase",
+              cursor: "pointer",
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {view === "song" && <AmazingGrace width={width} />}
+
+      {view === "scales" && (
+        <>
       <h1 style={{ textAlign: "center", fontSize: "2rem", fontWeight: 700, letterSpacing: 2, color: "#c8a96e", marginBottom: 4, textTransform: "uppercase" }}>
         Guitar Scales
       </h1>
@@ -318,6 +343,8 @@ export default function App() {
           )}
         </div>
       ))}
+        </>
+      )}
     </div>
   );
 }
