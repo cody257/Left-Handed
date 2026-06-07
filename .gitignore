@@ -1,5 +1,21 @@
-node_modules
-dist
-.vite
-.DS_Store
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Logs
 *.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Local env
+.env
+.env.local
+
+# Claude Code session
+.claude/
